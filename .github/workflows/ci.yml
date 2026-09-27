@@ -1,0 +1,55 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-and-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync
+      - run: uv run ruff check .
+      # Integration tests skip themselves without the local stack.
+      - run: uv run pytest -q
+
+  pipeline:
+    # Real end-to-end build on a small slice of live NYC Open Data: ingest the last 30 days
+    # of 311 plus full tonnage/reference/weather, dbt build with all tests, validate the
+    # semantic layer, then prove every chaos fault is caught by a data test. No LLM calls.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: password
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      PGPASSWORD: password
+      DBT_PROFILES_DIR: ${{ github.workspace }}/transform
+      PYTHONPATH: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync
+      - name: Bootstrap warehouse
+        run: |
+          psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f infra/postgres/bootstrap.sql
+          psql -h localhost -U postgres -v ON_ERROR_STOP=1 -d curbside -f infra/postgres/ops.sql
+      - name: Ingest (last 30 days of 311)
+        run: CURBSIDE_311_START_DATE=$(date -d '-30 days' +%F) uv run python -m ingestion.run
+      - name: dbt build
+        run: cd transform && uv run dbt build
+      - name: Validate semantic layer
+        run: cd transform && uv run mf validate-configs
+      - name: Data-quality coverage (chaos faults must be detected)
+        run: uv run python -m evals.chaos.detection

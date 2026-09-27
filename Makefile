@@ -85,6 +85,63 @@ om-profile: ## Profile the marts (column statistics)
 om-classify: ## OpenMetadata's built-in PII auto-classification (eval baseline)
 	$(OM_METADATA) classify -c $(OM_WORKFLOWS)/auto_classification.yaml
 
+# ---------------------------------------------------------------- one-shot setup
+.PHONY: setup
+setup: install om-install up om-token pipeline om-ingest ## Fresh clone -> running platform (~15 min, mostly the 311 backfill)
+	@echo "Done. Next: make dagster (UI :3000), make app (UI :8501), add ANTHROPIC_API_KEY to .env for agents"
+
+# ---------------------------------------------------------------- quality
+.PHONY: test lint dq-coverage
+test: ## Unit tests + live integration tests (integration tests skip if the stack is down)
+	uv run pytest -q
+
+lint: ## Ruff
+	uv run ruff check .
+
+dq-coverage: ## Free: inject every chaos fault and confirm a data test catches it
+	uv run python -m evals.chaos.detection
+
+# ---------------------------------------------------------------- agents + app
+.PHONY: app ask steward incident proposals approve reject
+app: ## Streamlit console at http://localhost:8501
+	uv run streamlit run app/streamlit_app.py
+
+ask: ## Analyst agent: make ask Q="Which borough diverts the most waste?"
+	uv run python -m agents.analyst "$(Q)"
+
+steward: ## Steward agent: queue catalog improvements for approval
+	uv run python -m agents.steward $(TABLES)
+
+incident: ## Incident agent: make incident RUN=<dagster run id> (default: latest failed run)
+	uv run python -m agents.incident $(RUN)
+
+proposals: ## List metadata proposals waiting for approval
+	uv run python -m governance.proposals list
+
+approve: ## make approve ID=<proposal id>
+	uv run python -m governance.proposals approve $(ID)
+
+reject: ## make reject ID=<proposal id>
+	uv run python -m governance.proposals reject $(ID)
+
+# ---------------------------------------------------------------- chaos + evals
+.PHONY: chaos chaos-restore eval-analyst eval-steward eval-chaos
+chaos: ## Break something: make chaos FAULT=unit_change_tonnage (the failure sensor calls the incident agent)
+	uv run python -m evals.chaos.faults inject $(FAULT)
+	uv run python -c "from evals.chaos import dagster_runs; print('run', dagster_runs.launch('transform_only'))"
+
+chaos-restore: ## Undo all injected faults and rebuild the warehouse
+	uv run python -m evals.chaos.faults restore-all
+
+eval-analyst: ## Golden-question eval (costs API credits; LIMIT=1 to measure)
+	uv run python -m evals.run_evals analyst $(if $(LIMIT),--limit $(LIMIT),)
+
+eval-steward: ## PII tagging eval vs OpenMetadata auto-classification (costs API credits)
+	uv run python -m evals.run_evals steward
+
+eval-chaos: ## Incident root-cause eval over injected faults (costs API credits): FAULTS="a b"
+	uv run python -m evals.run_evals chaos $(FAULTS)
+
 # ---------------------------------------------------------------- orchestration
 .PHONY: dbt-parse dagster materialize
 dbt-parse: ## Regenerate the dbt manifest Dagster loads
