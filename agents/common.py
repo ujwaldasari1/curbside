@@ -123,15 +123,50 @@ class AgentResult:
     trace_path: str
 
 
+def _response_json(response: Any) -> dict:
+    """An MCP tool result as PostToolUse sees it: [{"type": "text", "text": "<json>"}]."""
+    blocks = response if isinstance(response, list) else [response]
+    for block in blocks:
+        text = block.get("text") if isinstance(block, dict) else block
+        if isinstance(text, str):
+            try:
+                parsed = json.loads(text)
+            except ValueError:
+                continue
+            if isinstance(parsed, dict):
+                return parsed
+    return {}
+
+
+def _executed_query(tool: str | None, tool_input: dict | None, response: Any) -> dict:
+    """{"sql", "query_id"} for a successful warehouse tool call, else {}."""
+    result = _response_json(response)
+    if tool == curbside_tool("query_metric"):
+        sql = result.get("sql")
+    elif tool == curbside_tool("run_readonly_sql") and "rows" in result:
+        sql = (tool_input or {}).get("sql")
+    else:
+        return {}
+    return {"sql": sql, "query_id": result.get("query_id")} if sql else {}
+
+
+def executed_sql(tool_calls: list[dict]) -> list[str]:
+    """Distinct SQL the agent's tool calls ran, in order."""
+    return list(dict.fromkeys(t["sql"] for t in tool_calls if t.get("sql")))
+
+
 def _options(spec: AgentSpec, trace: list[dict]) -> ClaudeAgentOptions:
     async def record_tool_call(input_data: dict, tool_use_id: str | None, context: Any) -> dict:
+        tool, tool_input = input_data.get("tool_name"), input_data.get("tool_input")
         response = input_data.get("tool_response")
-        trace.append({
+        entry = {
             "at": dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
-            "tool": input_data.get("tool_name"),
-            "input": input_data.get("tool_input"),
+            "tool": tool,
+            "input": tool_input,
             "response_chars": len(json.dumps(response, default=str)) if response is not None else 0,
-        })
+        }
+        entry.update(_executed_query(tool, tool_input, response))
+        trace.append(entry)
         return {}
 
     allowed = [curbside_tool(t) for t in spec.curbside_tools] + [om_tool(t) for t in spec.om_tools]

@@ -11,6 +11,7 @@ Per-agent least privilege comes from the environment the agent launches this ser
   CURBSIDE_MAX_ROWS       row cap for SQL results (default 200)
 """
 
+import hashlib
 import os
 from pathlib import Path
 from typing import Literal
@@ -97,6 +98,11 @@ def _dagster_status(table: str) -> dict:
         return {"error": str(err)}
 
 
+def _query_id(sql: str) -> str:
+    """Short id an agent cites to say which query its numbers came from."""
+    return hashlib.sha1(sql.encode()).hexdigest()[:8]
+
+
 def _lineage(table_fqn: str, upstream: int, downstream: int) -> dict:
     return om().get(
         f"/v1/lineage/table/name/{table_fqn}",
@@ -113,7 +119,7 @@ def run_readonly_sql(sql: str, max_rows: int = 50) -> dict:
     Tables must be schema-qualified ('marts.fct_monthly_tonnage'). Writes, multiple
     statements, locking clauses and server functions such as pg_sleep are rejected.
     Only schemas in this agent's scope are allowed. Results are capped at max_rows.
-    Prefer query_metric for certified metrics.
+    Prefer query_metric for certified metrics. Returns rows plus a query_id.
     """
     try:
         safe_sql = validate_readonly_sql(sql, SQL_SCHEMAS)
@@ -121,9 +127,10 @@ def run_readonly_sql(sql: str, max_rows: int = 50) -> dict:
         raise ToolError(f"rejected by SQL guard: {err}") from err
     limit = max(1, min(max_rows, MAX_ROWS_CAP))
     try:
-        return warehouse.run_readonly_query(safe_sql, limit)
+        result = warehouse.run_readonly_query(safe_sql, limit)
     except Exception as err:  # surface database errors to the model so it can fix its SQL
         raise ToolError(f"query failed: {str(err)[:500]}") from err
+    return {**result, "query_id": _query_id(sql)}
 
 
 @mcp.tool(annotations=READ_ONLY)
@@ -147,7 +154,8 @@ def query_metric(
     "community_district__borough"]. `where` uses MetricFlow syntax, e.g.
     "{{ Dimension('community_district__borough') }} = 'Bronx'" or
     "{{ TimeDimension('metric_time', 'month') }} >= '2026-01-01'". Prefix an order_by
-    entry with '-' for descending. Returns rows plus the SQL MetricFlow generated.
+    entry with '-' for descending. Returns rows, the SQL MetricFlow generated and a
+    query_id.
     """
     try:
         sql = semantic_layer.compile_metric_query(
@@ -157,7 +165,7 @@ def query_metric(
         result = warehouse.run_readonly_query(safe_sql, max(1, min(limit, MAX_ROWS_CAP)))
     except (semantic_layer.SemanticLayerError, UnsafeSQLError) as err:
         raise ToolError(str(err)) from err
-    return {**result, "sql": sql}
+    return {**result, "sql": sql, "query_id": _query_id(sql)}
 
 
 @mcp.tool(annotations=READ_ONLY)

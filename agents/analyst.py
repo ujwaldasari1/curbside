@@ -8,7 +8,7 @@ import sys
 
 import anyio
 
-from agents.common import AgentResult, AgentSpec, run_agent
+from agents.common import AgentResult, AgentSpec, executed_sql, run_agent
 
 OUTPUT_SCHEMA = {
     "type": "object",
@@ -25,10 +25,14 @@ OUTPUT_SCHEMA = {
         },
         "metrics_used": {"type": "array", "items": {"type": "string"}},
         "tables_used": {"type": "array", "items": {"type": "string"}},
-        "sql": {"type": "array", "items": {"type": "string"}},
+        "evidence_query_ids": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "query_id of every query whose rows the answer's numbers come from",
+        },
         "caveats": {"type": "array", "items": {"type": "string"}},
     },
-    "required": ["answer_markdown", "key_numbers", "metrics_used", "tables_used"],
+    "required": ["answer_markdown", "key_numbers", "metrics_used", "tables_used", "evidence_query_ids"],
 }
 
 SPEC = AgentSpec(
@@ -44,8 +48,23 @@ SPEC = AgentSpec(
 )
 
 
+def attach_sql(output: dict, tool_calls: list[dict]) -> None:
+    """Attach the SQL that ran, taken from the tool results rather than the model's retelling.
+
+    `sql` holds the queries the answer cites as evidence; `other_sql_run` holds the rest
+    (exploratory or superseded queries), so nothing that ran is hidden.
+    """
+    cited = set(output.get("evidence_query_ids") or [])
+    ran = executed_sql(tool_calls)
+    output["sql"] = executed_sql([t for t in tool_calls if t.get("query_id") in cited])
+    output["other_sql_run"] = [sql for sql in ran if sql not in output["sql"]]
+
+
 async def ask(question: str, trigger: str = "manual") -> AgentResult:
-    return await run_agent(SPEC, question, trigger=trigger)
+    result = await run_agent(SPEC, question, trigger=trigger)
+    if isinstance(result.output, dict):
+        attach_sql(result.output, result.tool_calls)
+    return result
 
 
 if __name__ == "__main__":

@@ -62,6 +62,7 @@ async def test_sql_reads_marts():
                                   {"sql": "select count(*) as n from marts.dim_community_district"})
     assert not is_error
     assert result["rows"] == [[59]]
+    assert len(result["query_id"]) == 8
 
 
 async def test_sql_guard_blocks_writes_and_out_of_scope_schemas():
@@ -81,6 +82,7 @@ async def test_query_metric_uses_semantic_layer():
     assert result["row_count"] == 5
     assert all(0 < row[1] < 1 for row in result["rows"])
     assert "fct_monthly_tonnage" in result["sql"]
+    assert len(result["query_id"]) == 8
 
 
 async def test_diagnose_asset_reports_known_warning_and_upstream():

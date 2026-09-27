@@ -44,7 +44,13 @@ for asked, result in st.session_state.history:
         with st.expander("How I got this"):
             st.write({"metrics": output.get("metrics_used"), "tables": output.get("tables_used"),
                       "caveats": output.get("caveats")})
+            if output.get("sql"):
+                st.markdown("**SQL behind these numbers**")
             for sql in output.get("sql") or []:
+                st.code(sql, language="sql")
+            if output.get("other_sql_run"):
+                st.markdown("**Other queries run while exploring**")
+            for sql in output.get("other_sql_run") or []:
                 st.code(sql, language="sql")
             st.caption(f"{result.num_turns} turns · {len(result.tool_calls)} tool calls · "
                        f"{result.duration_ms / 1000:.1f}s · ${result.cost_usd or 0:.3f}")
