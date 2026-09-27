@@ -2,6 +2,8 @@
 
 **An AI-native, metadata-driven data platform for NYC sanitation data.**
 
+![Curbside at a glance: NYC Open Data is ingested with dlt, cleaned and tested with Postgres and dbt, cataloged in OpenMetadata, and used by Claude agents over MCP; a person approves every change before it reaches the catalog](docs/curbside-overview.png)
+
 Curbside ingests NYC Department of Sanitation (DSNY) collection tonnage and 311 sanitation
 complaints and models them with dbt. Dagster orchestrates the pipeline, and **OpenMetadata**
 catalogs it. OpenMetadata also serves as the shared memory for three Claude agents:
