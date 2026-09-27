@@ -30,13 +30,23 @@ flowchart LR
   A1 & A2 --> B
   D --> F[OpenMetadata 2.0<br/>catalog · lineage · glossary · DQ]
   E --> F
-  F <-->|MCP| G[curbside-mcp<br/>guarded SQL · metrics · diagnosis · approvals]
-  F <-->|MCP| H{{Claude agents<br/>steward · incident · analyst}}
-  G <--> H
+  H{{Claude agents<br/>steward · incident · analyst}} -->|MCP, read-only| F
+  H -->|MCP| G[curbside-mcp<br/>guarded SQL · metrics · diagnosis · proposal queue]
+  G -->|REST, read-only| F
   H -->|proposals| I[Human approval<br/>Streamlit console]
   I -->|JSON Patch| F
   E -->|run failure| H
 ```
+
+### What runs where
+
+![Curbside infrastructure: the internet, host processes on the laptop, and the Docker containers, with every connection and the role it uses](docs/infra.svg)
+
+Everything runs on one laptop. Dagster, dbt, dlt, the agents and the console are host
+processes in one uv virtualenv; Postgres, OpenMetadata and Elasticsearch run in Docker with
+ports bound to 127.0.0.1. The only outbound traffic is HTTPS to the two open-data APIs and
+the Anthropic API. Agents read the catalog but can't change it: the one write path is a
+person approving a proposal in the console, which applies a JSON Patch.
 
 ## Why it's built this way
 

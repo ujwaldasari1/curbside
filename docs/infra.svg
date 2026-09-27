@@ -1,0 +1,202 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 970" width="1200" height="970" role="img" aria-labelledby="title desc">
+  <title id="title">Curbside infrastructure: what runs where</title>
+  <desc id="desc">Three zones. The internet: NYC Open Data, Open-Meteo, the Anthropic API and GitHub Actions CI. The laptop: Dagster (run-failure sensor, dlt ingest, dbt build and tests, catalog sync), an agent session (Claude agents and the curbside-mcp server, no shell or file access) and the Streamlit console. Docker, with ports bound to 127.0.0.1: one Postgres container holding the curbside warehouse and the OpenMetadata database, the OpenMetadata server and Elasticsearch. Agents read the catalog read-only; the only write into the catalog is a person approving a proposal, which applies a JSON Patch.</desc>
+  <style>
+    .bg{fill:#ffffff}
+    .zone{fill:#f6f8fa;stroke:#d0d7de;stroke-width:1}
+    .box{fill:#ffffff;stroke:#8c959f;stroke-width:1.2}
+    .sub{fill:#f6f8fa;stroke:#d0d7de;stroke-width:1}
+    .grp{fill:none;stroke:#8c959f;stroke-width:1.2;stroke-dasharray:6 4}
+    .accbox{fill:#ddf4ff;stroke:#0969da;stroke-width:1.6}
+    .pill{fill:#ffffff;stroke:#8c959f;stroke-width:1}
+    text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+    .h{font-size:21px;font-weight:700;fill:#1f2328}
+    .t{font-size:15px;font-weight:600;fill:#1f2328}
+    .t2{font-size:13.5px;font-weight:600;fill:#1f2328}
+    .s{font-size:12.5px;fill:#59636e}
+    .zl{font-size:11.5px;font-weight:700;letter-spacing:.07em;fill:#59636e}
+    .k{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;fill:#59636e}
+    .l,.la{font-size:12.5px;paint-order:stroke;stroke:#ffffff;stroke-width:4px;stroke-linejoin:round}
+    .l{fill:#59636e}
+    .la{fill:#0969da;font-weight:600}
+    .e{fill:none;stroke:#6e7781;stroke-width:1.5}
+    .ea{fill:none;stroke:#0969da;stroke-width:2.4}
+    .ah{fill:#6e7781}
+    .aha{fill:#0969da}
+    @media (prefers-color-scheme: dark){
+      .bg{fill:#0d1117}
+      .zone{fill:#151b23;stroke:#3d444d}
+      .box{fill:#0d1117;stroke:#656c76}
+      .sub{fill:#151b23;stroke:#3d444d}
+      .grp{stroke:#656c76}
+      .accbox{fill:#0c2d6b;stroke:#4493f8}
+      .pill{fill:#0d1117;stroke:#656c76}
+      .h,.t,.t2{fill:#f0f6fc}
+      .s,.zl,.k,.l{fill:#9198a1}
+      .l,.la{stroke:#0d1117}
+      .la{fill:#4493f8}
+      .e{stroke:#8b949e}
+      .ea{stroke:#4493f8}
+      .ah{fill:#8b949e}
+      .aha{fill:#4493f8}
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker>
+    <marker id="aa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="aha"/></marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1200" height="970"/>
+  <text class="h" x="20" y="37">Curbside: what runs where</text>
+  <text class="s" x="1180" y="37" text-anchor="end">Arrows point from caller to callee. Blue is the only path that writes to the catalog.</text>
+
+  <!-- ============ Internet ============ -->
+  <rect class="zone" x="20" y="58" width="1160" height="112" rx="10"/>
+  <text class="zl" x="36" y="80">INTERNET · OUTBOUND HTTPS ONLY</text>
+  <rect class="box" x="40" y="92" width="196" height="62" rx="8"/>
+  <text class="t" x="56" y="117">NYC Open Data</text>
+  <text class="s" x="56" y="137">311 · tonnage · districts</text>
+  <rect class="box" x="252" y="92" width="118" height="62" rx="8"/>
+  <text class="t" x="266" y="117">Open-Meteo</text>
+  <text class="s" x="266" y="137">daily weather</text>
+  <rect class="box" x="470" y="92" width="270" height="62" rx="8"/>
+  <text class="t" x="486" y="117">Anthropic API</text>
+  <text class="s" x="486" y="137">Claude models</text>
+  <rect class="box" x="860" y="92" width="300" height="62" rx="8"/>
+  <text class="t" x="876" y="117">GitHub Actions CI</text>
+  <text class="s" x="876" y="137">lint, tests, 30-day pipeline, no secrets</text>
+
+  <!-- ============ Laptop ============ -->
+  <rect class="zone" x="20" y="198" width="1160" height="446" rx="10"/>
+  <text class="zl" x="1164" y="220" text-anchor="end">YOUR LAPTOP · HOST PROCESSES IN ONE UV VIRTUALENV</text>
+
+  <!-- Dagster -->
+  <rect class="box" x="40" y="232" width="300" height="392" rx="8"/>
+  <text class="t" x="56" y="258">Dagster</text>
+  <rect class="sub" x="58" y="272" width="264" height="48" rx="6"/>
+  <text class="t2" x="74" y="293">run-failure sensor</text>
+  <text class="s" x="74" y="311">watches every run</text>
+  <rect class="sub" x="58" y="336" width="264" height="56" rx="6"/>
+  <text class="t2" x="74" y="358">dlt: ingest</text>
+  <text class="s" x="74" y="377">APIs → raw_* tables, incremental</text>
+  <rect class="sub" x="58" y="404" width="264" height="56" rx="6"/>
+  <text class="t2" x="74" y="426">dbt: build + 57 tests</text>
+  <text class="s" x="74" y="445">staging → intermediate → marts</text>
+  <rect class="sub" x="58" y="472" width="264" height="56" rx="6"/>
+  <text class="t2" x="74" y="494">catalog sync</text>
+  <text class="s" x="74" y="513">metadata, lineage, test results</text>
+  <text class="s" x="56" y="612">daily_refresh · 06:00 ET</text>
+  <text class="k" x="324" y="612" text-anchor="end">UI :3000</text>
+
+  <!-- Agent session -->
+  <rect class="grp" x="420" y="232" width="360" height="392" rx="10"/>
+  <text class="zl" x="436" y="254">AGENT SESSION · NO SHELL, NO FILES</text>
+  <rect class="box" x="440" y="268" width="320" height="84" rx="8"/>
+  <text class="t" x="456" y="292">Claude agents</text>
+  <text class="s" x="456" y="311">analyst · steward · incident</text>
+  <text class="s" x="456" y="329">Agent SDK · MCP tools only · $ cap per run</text>
+  <rect class="box" x="440" y="420" width="320" height="110" rx="8"/>
+  <text class="t" x="456" y="444">curbside-mcp</text>
+  <text class="s" x="456" y="464">guarded SQL: one SELECT, schema allow-list</text>
+  <text class="s" x="456" y="482">certified metrics, compiled by MetricFlow</text>
+  <text class="s" x="456" y="500">run diagnosis · proposal + incident queue</text>
+
+  <!-- Console -->
+  <rect class="box" x="860" y="232" width="300" height="392" rx="8"/>
+  <text class="t" x="876" y="258">Curbside console</text>
+  <text class="k" x="1144" y="258" text-anchor="end">UI :8501</text>
+  <text class="s" x="876" y="277">Streamlit</text>
+  <rect class="sub" x="878" y="292" width="264" height="40" rx="6"/>
+  <text class="t2" x="894" y="317">Ask the analyst</text>
+  <rect class="sub" x="878" y="344" width="264" height="40" rx="6"/>
+  <text class="t2" x="894" y="369">Incidents · Chaos lab · Evals</text>
+  <rect class="sub" x="878" y="396" width="264" height="40" rx="6"/>
+  <text class="t2" x="894" y="421">Overview: data + run health</text>
+  <rect class="accbox" x="878" y="528" width="264" height="64" rx="6"/>
+  <text class="t2" x="894" y="552">Approvals</text>
+  <text class="s" x="894" y="572">a person reviews each proposal</text>
+
+  <!-- ============ Docker ============ -->
+  <rect class="zone" x="20" y="732" width="1160" height="224" rx="10"/>
+  <text class="zl" x="36" y="946">DOCKER (ORBSTACK) · PORTS BOUND TO 127.0.0.1</text>
+
+  <rect class="grp" x="40" y="766" width="700" height="158" rx="8"/>
+  <text class="s" x="210" y="789">Postgres 15 · one container, two databases</text>
+  <rect class="box" x="56" y="800" width="520" height="112" rx="8"/>
+  <text class="t" x="72" y="823">curbside warehouse</text>
+  <rect class="pill" x="72" y="834" width="64" height="24" rx="12"/>
+  <text class="k" x="104" y="850" text-anchor="middle">raw_*</text>
+  <path class="e" d="M138,846 H158" marker-end="url(#a)"/>
+  <rect class="pill" x="160" y="834" width="74" height="24" rx="12"/>
+  <text class="k" x="197" y="850" text-anchor="middle">staging</text>
+  <path class="e" d="M236,846 H256" marker-end="url(#a)"/>
+  <rect class="pill" x="258" y="834" width="106" height="24" rx="12"/>
+  <text class="k" x="311" y="850" text-anchor="middle">intermediate</text>
+  <path class="e" d="M366,846 H386" marker-end="url(#a)"/>
+  <rect class="pill" x="388" y="834" width="64" height="24" rx="12"/>
+  <text class="k" x="420" y="850" text-anchor="middle">marts</text>
+  <rect class="pill" x="72" y="870" width="300" height="26" rx="13"/>
+  <text class="k" x="84" y="887">ops: proposals · incidents · agent_runs</text>
+  <rect class="box" x="592" y="800" width="140" height="112" rx="8"/>
+  <text class="t2" x="606" y="823">openmetadata_db</text>
+  <text class="s" x="606" y="842">catalog store</text>
+
+  <rect class="box" x="790" y="766" width="370" height="74" rx="8"/>
+  <text class="t" x="806" y="790">OpenMetadata 2.0</text>
+  <text class="k" x="1144" y="790" text-anchor="end">UI :8585</text>
+  <text class="s" x="806" y="810">catalog · lineage · glossary · data quality</text>
+  <text class="s" x="806" y="828">UI, REST API and MCP endpoint</text>
+  <rect class="box" x="990" y="868" width="170" height="56" rx="8"/>
+  <text class="t2" x="1006" y="891">Elasticsearch</text>
+  <text class="s" x="1006" y="910">catalog search</text>
+
+  <!-- ============ Edges ============ -->
+  <!-- sources -> Dagster (dlt) -->
+  <path class="e" d="M138,154 V230" marker-end="url(#a)"/>
+  <path class="e" d="M311,154 V230" marker-end="url(#a)"/>
+  <text class="l" x="224" y="190" text-anchor="middle">HTTPS, daily</text>
+  <!-- agents -> Anthropic -->
+  <path class="e" d="M720,268 V156" marker-end="url(#a)"/>
+  <text class="l" x="728" y="190">Messages API</text>
+  <!-- sensor -> agents -->
+  <path class="e" d="M322,296 H438" marker-end="url(#a)"/>
+  <text class="l" x="380" y="288" text-anchor="middle">run failed</text>
+  <text class="l" x="380" y="312" text-anchor="middle">→ triage</text>
+  <!-- console Ask -> agents -->
+  <path class="e" d="M878,312 H762" marker-end="url(#a)"/>
+  <text class="l" x="820" y="304" text-anchor="middle">runs analyst</text>
+  <!-- agents -> curbside-mcp -->
+  <path class="e" d="M520,352 V418" marker-end="url(#a)"/>
+  <text class="l" x="528" y="390">MCP (stdio)</text>
+  <!-- curbside-mcp -> Dagster -->
+  <path class="e" d="M440,470 H342" marker-end="url(#a)"/>
+  <text class="l" x="390" y="462" text-anchor="middle">GraphQL</text>
+  <text class="l" x="390" y="486" text-anchor="middle">run status</text>
+  <!-- Dagster -> warehouse -->
+  <path class="e" d="M190,624 V798" marker-end="url(#a)"/>
+  <text class="l" x="182" y="668" text-anchor="end">dlt loads raw_*</text>
+  <text class="l" x="182" y="684" text-anchor="end">dbt builds marts</text>
+  <text class="l" x="182" y="700" text-anchor="end">as curbside_etl</text>
+  <!-- catalog sync -> OpenMetadata -->
+  <path class="e" d="M322,510 H400 V716 H770 V800 H788" marker-end="url(#a)"/>
+  <text class="l" x="408" y="668">catalog sync pushes</text>
+  <text class="l" x="408" y="684">metadata (bot token)</text>
+  <!-- curbside-mcp -> warehouse -->
+  <path class="e" d="M560,530 V798" marker-end="url(#a)"/>
+  <text class="l" x="568" y="668">SELECT as curbside_agent_ro</text>
+  <text class="l" x="568" y="684">read-only, 15 s, 200 rows</text>
+  <text class="l" x="568" y="700">queue → ops as curbside_app</text>
+  <!-- agent session -> OpenMetadata (read) -->
+  <path class="e" d="M780,470 H810 V764" marker-end="url(#a)"/>
+  <text class="l" x="818" y="668">reads lineage, glossary, tests</text>
+  <text class="l" x="818" y="684">MCP + REST, read-only</text>
+  <!-- Approvals -> OpenMetadata (the only write) -->
+  <path class="ea" d="M1100,592 V762" marker-end="url(#aa)"/>
+  <text class="la" x="1092" y="706" text-anchor="end">only catalog write:</text>
+  <text class="la" x="1092" y="722" text-anchor="end">approve → JSON Patch</text>
+  <!-- OpenMetadata -> its DB and search -->
+  <path class="e" d="M790,826 H734" marker-end="url(#a)"/>
+  <text class="l" x="762" y="846" text-anchor="middle">stores</text>
+  <path class="e" d="M1075,840 V866" marker-end="url(#a)"/>
+  <text class="l" x="1067" y="858" text-anchor="end">indexes</text>
+</svg>
