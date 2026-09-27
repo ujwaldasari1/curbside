@@ -1,0 +1,6 @@
+[runtime]
+dlthub_telemetry = false
+log_level = "WARNING"
+
+[normalize]
+loader_file_format = "insert_values"

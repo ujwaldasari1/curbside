@@ -1,0 +1,16 @@
+sources:
+  - name: dsny
+    description: >
+      NYC Department of Sanitation monthly collection tonnage by community district,
+      loaded by dlt from NYC Open Data dataset ebb7-mvp5 (full refresh each run).
+    schema: raw_dsny
+    tables:
+      - name: monthly_tonnage
+        description: One row per community district per month, values as delivered (text).
+        columns:
+          - name: month
+            description: "Collection month as text in the form 'YYYY / MM'."
+          - name: borough_id
+            description: Borough code (1 Manhattan, 2 Bronx, 3 Brooklyn, 4 Queens, 5 Staten Island).
+          - name: communitydistrict
+            description: Two-digit community district number within the borough.

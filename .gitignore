@@ -1,0 +1,35 @@
+# secrets
+.env
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# dbt
+transform/target/
+transform/dbt_packages/
+transform/logs/
+logs/
+
+# dlt local state
+.dlt/secrets.toml
+.dlt/.sources
+
+# dagster
+.dagster_home/*
+!.dagster_home/dagster.yaml
+
+# docker volumes
+infra/docker-volume/
+
+# evals / traces
+evals/reports/*.json
+!evals/reports/.gitkeep
+
+.DS_Store
+
+# dbt per-machine user id
+transform/.user.yml

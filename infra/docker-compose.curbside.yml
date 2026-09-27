@@ -1,0 +1,14 @@
+# Curbside overrides layered on the vendored, unmodified OpenMetadata 2.0.2 compose file
+# (infra/openmetadata/docker-compose.yml). Upgrading OpenMetadata = replace that file.
+#
+# What changes vs. the official stack:
+#   - The Airflow-based `ingestion` container is moved behind a profile and never started.
+#     Metadata ingestion runs through the `metadata` CLI, triggered by Dagster (saves ~2 GB RAM).
+#   - The OpenMetadata Postgres instance also hosts the `curbside` warehouse database.
+services:
+  ingestion:
+    profiles: ["airflow"]
+
+  postgresql:
+    volumes:
+      - ./postgres/bootstrap.sql:/curbside/bootstrap.sql:ro

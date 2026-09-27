@@ -1,0 +1,40 @@
+models:
+  - name: stg_nyc311__service_requests
+    description: Typed and renamed DSNY 311 requests; one row per request.
+    columns:
+      - name: service_request_id
+        data_tests:
+          - unique
+          - not_null
+      - name: created_at
+        data_tests:
+          - not_null
+      - name: complaint_type
+        data_tests:
+          - not_null
+
+  - name: stg_dsny__monthly_tonnage
+    description: Typed DSNY monthly tonnage; one row per community district per month.
+    columns:
+      - name: boro_cd
+        data_tests:
+          - not_null
+      - name: month_start
+        data_tests:
+          - not_null
+
+  - name: stg_reference__community_districts
+    description: NYC community districts with census population.
+    columns:
+      - name: boro_cd
+        data_tests:
+          - unique
+          - not_null
+
+  - name: stg_weather__daily
+    description: Daily NYC weather (Open-Meteo archive).
+    columns:
+      - name: weather_date
+        data_tests:
+          - unique
+          - not_null

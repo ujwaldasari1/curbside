@@ -1,0 +1,9 @@
+sources:
+  - name: reference
+    description: Reference data from NYC Open Data, loaded by dlt (full refresh).
+    schema: raw_reference
+    tables:
+      - name: community_district_population
+        description: >
+          Decennial census population for NYC's 59 community districts (dataset xi7c-iiu2).
+          The latest census year published in this dataset is 2010.

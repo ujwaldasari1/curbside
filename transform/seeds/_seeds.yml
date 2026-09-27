@@ -1,0 +1,18 @@
+seeds:
+  - name: complaint_type_categories
+    description: >
+      Maps each DSNY 311 complaint type to a Curbside complaint category. Maintained by
+      hand; new upstream complaint types show up as 'uncategorized' in fct_service_requests.
+    config:
+      column_types:
+        is_collection_service: boolean
+    columns:
+      - name: complaint_type
+        description: 311 complaint type exactly as published.
+        data_tests:
+          - unique
+          - not_null
+      - name: complaint_category
+        description: Curbside category.
+      - name: is_collection_service
+        description: True when the complaint concerns DSNY's own collection service.

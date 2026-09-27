@@ -1,0 +1,36 @@
+name: curbside
+version: 1.0.0
+config-version: 2
+require-dbt-version: [">=1.12.0", "<2.0.0"]
+
+profile: curbside
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+analysis-paths: ["analyses"]
+snapshot-paths: ["snapshots"]
+
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  curbside:
+    staging:
+      +schema: staging
+      +materialized: view
+    intermediate:
+      +schema: intermediate
+      +materialized: view
+    marts:
+      +schema: marts
+      +materialized: table
+
+seeds:
+  curbside:
+    +schema: staging
+
+# Every relation dbt builds is readable by the agents' read-only role and by the
+# OpenMetadata profiler (schemas are pre-created by infra/postgres/bootstrap.sql).
+on-run-end:
+  - "{% for schema in schemas %}grant usage on schema {{ schema }} to curbside_agent_ro, openmetadata_reader; grant select on all tables in schema {{ schema }} to curbside_agent_ro, openmetadata_reader;{% endfor %}"

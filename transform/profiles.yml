@@ -1,0 +1,12 @@
+curbside:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('CURBSIDE_PG_HOST', 'localhost') }}"
+      port: "{{ env_var('CURBSIDE_PG_PORT', '5432') | as_number }}"
+      user: "{{ env_var('CURBSIDE_ETL_USER', 'curbside_etl') }}"
+      password: "{{ env_var('CURBSIDE_ETL_PASSWORD', 'curbside_etl') }}"
+      dbname: "{{ env_var('CURBSIDE_PG_DB', 'curbside') }}"
+      schema: staging
+      threads: 4

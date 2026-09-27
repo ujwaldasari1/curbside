@@ -1,0 +1,206 @@
+models:
+  - name: dim_community_district
+    description: >
+      NYC's 59 community districts, the geography DSNY uses to plan collection routes.
+      Population is from the 2010 census, the latest year in the source dataset.
+    config:
+      meta:
+        owner: curbside-data-team
+        tier: Tier1
+    columns:
+      - name: boro_cd
+        description: "Community district ID: borough code x 100 + district number (e.g. 201 = Bronx CD 1)."
+        data_tests:
+          - unique
+          - not_null
+      - name: borough_code
+        description: Borough code (1 Manhattan, 2 Bronx, 3 Brooklyn, 4 Queens, 5 Staten Island).
+      - name: borough
+        description: Borough name.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Manhattan', 'Bronx', 'Brooklyn', 'Queens', 'Staten Island']
+      - name: cd_number
+        description: Community district number within the borough (1-18).
+      - name: cd_name
+        description: Neighborhoods covered by the district.
+      - name: population_2000
+        description: Residents counted in the 2000 census.
+      - name: population_2010
+        description: Residents counted in the 2010 census; denominator for per-capita metrics.
+        data_tests:
+          - not_null
+          - non_negative
+
+  - name: fct_service_requests
+    description: >
+      One row per 311 service request handled by DSNY since the configured start date,
+      with complaint category, district and resolution time. Contains street addresses
+      and coordinates of the reported location.
+    config:
+      meta:
+        owner: curbside-data-team
+        tier: Tier1
+    columns:
+      - name: service_request_id
+        description: 311 unique key of the request.
+        data_tests:
+          - unique
+          - not_null
+      - name: created_at
+        description: When the request was opened (New York local time).
+        data_tests:
+          - not_null
+      - name: created_date
+        description: Calendar date the request was opened.
+      - name: closed_at
+        description: When the request was closed (New York local time); null while open.
+      - name: status
+        description: Current request status (e.g. Open, In Progress, Closed).
+      - name: complaint_type
+        description: 311 complaint type as entered by the caller or agent.
+        data_tests:
+          - not_null
+      - name: complaint_category
+        description: >
+          Curbside grouping of complaint types (collection, cleanliness, illegal_dumping,
+          snow_and_ice, ...). 'uncategorized' means a new complaint type appeared upstream
+          that the complaint_type_categories seed does not map yet.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['collection', 'commercial_waste', 'cleanliness', 'illegal_dumping',
+                         'snow_and_ice', 'derelict_vehicles', 'enforcement', 'street_cleaning',
+                         'litter_baskets', 'other']
+              config:
+                severity: warn
+      - name: is_collection_service
+        description: True when the complaint is about DSNY's own collection service (e.g. missed pickup).
+      - name: district_type
+        description: residential_district, joint_interest_area (parks, airports) or unspecified.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['residential_district', 'joint_interest_area', 'unspecified']
+      - name: boro_cd
+        description: Community district of the request; null outside the 59 residential districts.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_community_district')
+                field: boro_cd
+      - name: resolution_hours
+        description: Hours from creation to closure.
+        data_tests:
+          - non_negative
+
+  - name: fct_monthly_tonnage
+    description: >
+      Monthly DSNY curbside collection in tons by community district and waste stream,
+      with the diversion rate (share of collected tons that is recycling or organics).
+    config:
+      meta:
+        owner: curbside-data-team
+        tier: Tier1
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "boro_cd || '-' || month_start"
+    columns:
+      - name: boro_cd
+        description: Community district ID.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_community_district')
+                field: boro_cd
+      - name: month_start
+        description: First day of the collection month.
+        data_tests:
+          - not_null
+      - name: refuse_tons
+        description: Trash (refuse) collected, in short tons.
+        data_tests:
+          - not_null
+          - non_negative
+      - name: paper_tons
+        description: Paper and cardboard recycling collected, in short tons.
+        data_tests:
+          - non_negative
+      - name: mgp_tons
+        description: Metal, glass, plastic and beverage carton recycling collected, in short tons.
+        data_tests:
+          - non_negative
+      - name: organics_tons
+        description: All organics streams (residential, school, leaves, Christmas trees, other), in short tons.
+        data_tests:
+          - non_negative
+      - name: curbside_recycling_tons
+        description: paper_tons + mgp_tons.
+      - name: total_collected_tons
+        description: All streams combined.
+      - name: diversion_rate
+        description: (recycling + organics) / total collected; 0-1.
+        data_tests:
+          - value_between:
+              arguments:
+                min_value: 0
+                max_value: 1
+
+  - name: fct_district_daily_sanitation
+    description: >
+      Day x community district: DSNY 311 demand by category next to that day's NYC weather.
+      Zero-filled so every district appears on every day.
+    config:
+      meta:
+        owner: curbside-data-team
+        tier: Tier2
+    columns:
+      - name: activity_date
+        description: Calendar date.
+        data_tests:
+          - not_null
+      - name: boro_cd
+        description: Community district ID.
+        data_tests:
+          - not_null
+      - name: requests_total
+        description: All DSNY 311 requests opened that day in the district.
+      - name: missed_collection_requests
+        description: Requests with complaint type 'Missed Collection'.
+      - name: snow_and_ice_requests
+        description: Snow or ice complaints.
+      - name: snowfall_cm
+        description: Citywide snowfall that day (cm).
+      - name: is_snow_day
+        description: Snowfall of at least 1 cm.
+
+  - name: mart_district_monthly_scorecard
+    description: >
+      Month x community district scorecard for sanitation performance: tonnage, diversion
+      rate, 311 demand per 10k residents and missed collections per 1,000 tons of refuse.
+      This is the certified source for district comparisons.
+    config:
+      meta:
+        owner: curbside-data-team
+        tier: Tier1
+    columns:
+      - name: month_start
+        description: First day of the month.
+        data_tests:
+          - not_null
+      - name: boro_cd
+        description: Community district ID.
+        data_tests:
+          - not_null
+      - name: diversion_rate
+        description: (recycling + organics) / total collected tons.
+      - name: requests_per_10k_residents
+        description: DSNY 311 requests per 10,000 residents (2010 census).
+      - name: missed_collections_per_1k_refuse_tons
+        description: Missed-collection complaints per 1,000 tons of refuse collected, a service-reliability rate.
+      - name: lbs_collected_per_resident
+        description: Pounds of material collected per resident in the month.

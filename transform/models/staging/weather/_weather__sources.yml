@@ -1,0 +1,7 @@
+sources:
+  - name: weather
+    description: Daily NYC weather from the Open-Meteo historical archive (lat 40.7128, lon -74.0060).
+    schema: raw_weather
+    tables:
+      - name: weather_daily
+        description: One row per day since 2024-12-01; the archive lags real time by about two days.

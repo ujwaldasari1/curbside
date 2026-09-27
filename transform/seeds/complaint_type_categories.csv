@@ -1,0 +1,28 @@
+complaint_type,complaint_category,is_collection_service
+Missed Collection,collection,true
+Residential Disposal Complaint,collection,true
+Institution Disposal Complaint,collection,true
+Sanitation Worker or Vehicle Complaint,collection,true
+Commercial Disposal Complaint,commercial_waste,false
+Dumpster Complaint,commercial_waste,false
+Transfer Station Complaint,commercial_waste,false
+Dirty Condition,cleanliness,false
+Graffiti,cleanliness,false
+Dead Animal,cleanliness,false
+Lot Condition,cleanliness,false
+Highway Condition,cleanliness,false
+Oil or Gas Spill,cleanliness,false
+Illegal Dumping,illegal_dumping,false
+Snow or Ice,snow_and_ice,false
+Derelict Vehicles,derelict_vehicles,false
+Abandoned Bike,derelict_vehicles,false
+Vendor Enforcement,enforcement,false
+Obstruction,enforcement,false
+Illegal Posting,enforcement,false
+Street Sweeping Complaint,street_cleaning,false
+Litter Basket Request,litter_baskets,false
+Litter Basket Complaint,litter_baskets,false
+Recycling Basket Complaint,litter_baskets,false
+Incorrect Data,other,false
+Unspecified,other,false
+DSNY Internal,other,false
