@@ -1,0 +1,28 @@
+# OpenMetadata's built-in (rule/NER-based) PII auto-classification.
+# Used as the BASELINE in evals/: the Steward agent's PII tagging is scored against it.
+# Run: metadata classify -c auto_classification.yaml
+source:
+  type: postgres
+  serviceName: curbside_warehouse
+  sourceConfig:
+    config:
+      type: AutoClassification
+      storeSampleData: false
+      enableAutoClassification: true
+      confidence: 80
+      schemaFilterPattern:
+        includes:
+          - ^marts$
+processor:
+  type: orm-profiler
+  config: {}
+sink:
+  type: metadata-rest
+  config: {}
+workflowConfig:
+  loggerLevel: INFO
+  openMetadataServerConfig:
+    hostPort: ${OPENMETADATA_HOST}
+    authProvider: openmetadata
+    securityConfig:
+      jwtToken: ${OPENMETADATA_JWT_TOKEN}

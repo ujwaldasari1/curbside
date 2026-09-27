@@ -16,6 +16,11 @@ clean-targets: ["target", "dbt_packages"]
 
 models:
   curbside:
+    # Read by OpenMetadata's dbt ingestion; marts override with their tier.
+    +meta:
+      openmetadata:
+        owner: curbside-data-team
+        domain: Sanitation
     staging:
       +schema: staging
       +materialized: view

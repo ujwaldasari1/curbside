@@ -1,0 +1,28 @@
+# Column-level statistics (null %, distinct, min/max, histograms) for the certified marts.
+# Run: metadata profile -c profiler.yaml
+source:
+  type: postgres
+  serviceName: curbside_warehouse
+  sourceConfig:
+    config:
+      type: Profiler
+      computeTableMetrics: true
+      computeColumnMetrics: true
+      schemaFilterPattern:
+        includes:
+          - ^marts$
+      threadCount: 2
+      timeoutSeconds: 600
+processor:
+  type: orm-profiler
+  config: {}
+sink:
+  type: metadata-rest
+  config: {}
+workflowConfig:
+  loggerLevel: INFO
+  openMetadataServerConfig:
+    hostPort: ${OPENMETADATA_HOST}
+    authProvider: openmetadata
+    securityConfig:
+      jwtToken: ${OPENMETADATA_JWT_TOKEN}

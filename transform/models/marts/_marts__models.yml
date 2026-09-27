@@ -5,11 +5,17 @@ models:
       Population is from the 2010 census, the latest year in the source dataset.
     config:
       meta:
-        owner: curbside-data-team
-        tier: Tier1
+        openmetadata:
+          owner: curbside-data-team
+          tier: Tier.Tier1
+          domain: Sanitation
     columns:
       - name: boro_cd
         description: "Community district ID: borough code x 100 + district number (e.g. 201 = Bronx CD 1)."
+        config:
+          meta:
+            openmetadata:
+              glossary: ["Sanitation.Community District"]
         data_tests:
           - unique
           - not_null
@@ -41,22 +47,38 @@ models:
       and coordinates of the reported location.
     config:
       meta:
-        owner: curbside-data-team
-        tier: Tier1
+        openmetadata:
+          owner: curbside-data-team
+          tier: Tier.Tier1
+          domain: Sanitation
     columns:
       - name: service_request_id
         description: 311 unique key of the request.
+        config:
+          meta:
+            openmetadata:
+              glossary: ["Sanitation.Service Request"]
         data_tests:
           - unique
           - not_null
       - name: created_at
         description: When the request was opened (New York local time).
         data_tests:
+          - not_in_future
           - not_null
       - name: created_date
         description: Calendar date the request was opened.
       - name: closed_at
         description: When the request was closed (New York local time); null while open.
+        data_tests:
+          - not_in_future:
+              config:
+                severity: warn
+          - not_before:
+              arguments:
+                other_column: created_at
+              config:
+                severity: warn
       - name: status
         description: Current request status (e.g. Open, In Progress, Closed).
       - name: complaint_type
@@ -80,6 +102,10 @@ models:
         description: True when the complaint is about DSNY's own collection service (e.g. missed pickup).
       - name: district_type
         description: residential_district, joint_interest_area (parks, airports) or unspecified.
+        config:
+          meta:
+            openmetadata:
+              glossary: ["Sanitation.Joint Interest Area"]
         data_tests:
           - accepted_values:
               arguments:
@@ -102,8 +128,10 @@ models:
       with the diversion rate (share of collected tons that is recycling or organics).
     config:
       meta:
-        owner: curbside-data-team
-        tier: Tier1
+        openmetadata:
+          owner: curbside-data-team
+          tier: Tier.Tier1
+          domain: Sanitation
     data_tests:
       - unique:
           arguments:
@@ -123,27 +151,51 @@ models:
           - not_null
       - name: refuse_tons
         description: Trash (refuse) collected, in short tons.
+        config:
+          meta:
+            openmetadata:
+              glossary: ["Sanitation.Refuse"]
         data_tests:
           - not_null
           - non_negative
       - name: paper_tons
         description: Paper and cardboard recycling collected, in short tons.
+        config:
+          meta:
+            openmetadata:
+              glossary: ["Sanitation.Paper Recycling"]
         data_tests:
           - non_negative
       - name: mgp_tons
         description: Metal, glass, plastic and beverage carton recycling collected, in short tons.
+        config:
+          meta:
+            openmetadata:
+              glossary: ["Sanitation.MGP"]
         data_tests:
           - non_negative
       - name: organics_tons
         description: All organics streams (residential, school, leaves, Christmas trees, other), in short tons.
+        config:
+          meta:
+            openmetadata:
+              glossary: ["Sanitation.Organics"]
         data_tests:
           - non_negative
       - name: curbside_recycling_tons
         description: paper_tons + mgp_tons.
       - name: total_collected_tons
         description: All streams combined.
+        config:
+          meta:
+            openmetadata:
+              glossary: ["Sanitation.Tonnage"]
       - name: diversion_rate
         description: (recycling + organics) / total collected; 0-1.
+        config:
+          meta:
+            openmetadata:
+              glossary: ["Sanitation.Diversion Rate"]
         data_tests:
           - value_between:
               arguments:
@@ -156,8 +208,10 @@ models:
       Zero-filled so every district appears on every day.
     config:
       meta:
-        owner: curbside-data-team
-        tier: Tier2
+        openmetadata:
+          owner: curbside-data-team
+          tier: Tier.Tier2
+          domain: Sanitation
     columns:
       - name: activity_date
         description: Calendar date.
@@ -171,6 +225,10 @@ models:
         description: All DSNY 311 requests opened that day in the district.
       - name: missed_collection_requests
         description: Requests with complaint type 'Missed Collection'.
+        config:
+          meta:
+            openmetadata:
+              glossary: ["Sanitation.Missed Collection"]
       - name: snow_and_ice_requests
         description: Snow or ice complaints.
       - name: snowfall_cm
@@ -185,8 +243,10 @@ models:
       This is the certified source for district comparisons.
     config:
       meta:
-        owner: curbside-data-team
-        tier: Tier1
+        openmetadata:
+          owner: curbside-data-team
+          tier: Tier.Tier1
+          domain: Sanitation
     columns:
       - name: month_start
         description: First day of the month.
@@ -198,9 +258,17 @@ models:
           - not_null
       - name: diversion_rate
         description: (recycling + organics) / total collected tons.
+        config:
+          meta:
+            openmetadata:
+              glossary: ["Sanitation.Diversion Rate"]
       - name: requests_per_10k_residents
         description: DSNY 311 requests per 10,000 residents (2010 census).
       - name: missed_collections_per_1k_refuse_tons
         description: Missed-collection complaints per 1,000 tons of refuse collected, a service-reliability rate.
+        config:
+          meta:
+            openmetadata:
+              glossary: ["Sanitation.Missed Collection"]
       - name: lbs_collected_per_resident
         description: Pounds of material collected per resident in the month.

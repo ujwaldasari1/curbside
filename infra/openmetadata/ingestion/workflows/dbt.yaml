@@ -1,0 +1,29 @@
+# Attach dbt metadata to the tables cataloged by postgres_metadata.yaml: model and column
+# descriptions, owners, tiers, domain, glossary terms (from meta.openmetadata), lineage
+# from compiled SQL, and dbt test definitions + latest results.
+source:
+  type: dbt
+  serviceName: curbside_warehouse
+  sourceConfig:
+    config:
+      type: DBT
+      dbtConfigSource:
+        dbtConfigType: local
+        dbtManifestFilePath: ${CURBSIDE_ROOT}/transform/target/manifest.json
+        dbtCatalogFilePath: ${CURBSIDE_ROOT}/transform/target/docs/catalog.json
+        dbtRunResultsFilePath: ${CURBSIDE_ROOT}/transform/target/run_results.json
+      dbtUpdateDescriptions: true
+      dbtUpdateOwners: true
+      includeTags: true
+      dbtClassificationName: dbtTags
+      searchAcrossDatabases: false
+sink:
+  type: metadata-rest
+  config: {}
+workflowConfig:
+  loggerLevel: INFO
+  openMetadataServerConfig:
+    hostPort: ${OPENMETADATA_HOST}
+    authProvider: openmetadata
+    securityConfig:
+      jwtToken: ${OPENMETADATA_JWT_TOKEN}

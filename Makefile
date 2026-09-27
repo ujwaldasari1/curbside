@@ -4,6 +4,9 @@ export PYTHONPATH := $(CURDIR)
 export DBT_PROFILES_DIR := $(CURDIR)/transform
 export DBT_PROJECT_DIR := $(CURDIR)/transform
 export DAGSTER_HOME := $(CURDIR)/.dagster_home
+export CURBSIDE_ROOT := $(CURDIR)
+OM_METADATA := $(CURDIR)/infra/openmetadata/ingestion/.venv/bin/metadata
+OM_WORKFLOWS := $(CURDIR)/infra/openmetadata/ingestion/workflows
 
 # Load local secrets/config (ANTHROPIC_API_KEY, OM token, ...) if present.
 ifneq (,$(wildcard .env))
@@ -60,6 +63,26 @@ dbt-build: ## dbt deps + build (models, tests, seeds)
 	cd transform && uv run dbt build
 
 pipeline: ingest dbt-build ## Ingest then transform (without Dagster)
+
+# ---------------------------------------------------------------- openmetadata
+.PHONY: om-install om-token om-seed om-ingest om-profile om-classify
+om-install: ## Create the isolated openmetadata-ingestion virtualenv
+	uv sync --project infra/openmetadata/ingestion
+
+om-token: ## Store the ingestion-bot JWT in .env
+	uv run python -m governance.bot_token
+
+om-seed: ## Governance as code: team, domain, glossary (run before om-ingest)
+	uv run python -m governance.seed_governance pre
+
+om-ingest: ## Full catalog sync: governance, warehouse, dbt, Dagster, data product, source lineage
+	uv run python -m governance.catalog_sync
+
+om-profile: ## Profile the marts (column statistics)
+	$(OM_METADATA) profile -c $(OM_WORKFLOWS)/profiler.yaml
+
+om-classify: ## OpenMetadata's built-in PII auto-classification (eval baseline)
+	$(OM_METADATA) classify -c $(OM_WORKFLOWS)/auto_classification.yaml
 
 # ---------------------------------------------------------------- orchestration
 .PHONY: dbt-parse dagster materialize

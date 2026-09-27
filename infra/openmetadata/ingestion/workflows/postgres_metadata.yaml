@@ -1,0 +1,42 @@
+# Catalog the curbside warehouse (schemas, tables, views, columns) into OpenMetadata.
+# Run: metadata ingest -c postgres_metadata.yaml   (env vars are expanded by the CLI)
+source:
+  type: postgres
+  serviceName: curbside_warehouse
+  serviceConnection:
+    config:
+      type: Postgres
+      username: openmetadata_reader
+      authType:
+        password: ${CURBSIDE_OM_READER_PASSWORD}
+      hostPort: ${CURBSIDE_PG_HOST}:${CURBSIDE_PG_PORT}
+      database: curbside
+      ingestAllDatabases: false
+  sourceConfig:
+    config:
+      type: DatabaseMetadata
+      markDeletedTables: true
+      includeTables: true
+      includeViews: true
+      includeTags: true
+      includeDDL: true
+      schemaFilterPattern:
+        includes:
+          - ^raw_.*
+          - ^staging$
+          - ^intermediate$
+          - ^marts$
+          - ^ops$
+      tableFilterPattern:
+        excludes:
+          - ^_dlt_.*
+sink:
+  type: metadata-rest
+  config: {}
+workflowConfig:
+  loggerLevel: INFO
+  openMetadataServerConfig:
+    hostPort: ${OPENMETADATA_HOST}
+    authProvider: openmetadata
+    securityConfig:
+      jwtToken: ${OPENMETADATA_JWT_TOKEN}

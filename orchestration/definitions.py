@@ -13,6 +13,7 @@ from dagster_dlt import DagsterDltResource
 
 from orchestration.dbt_assets import curbside_dbt_assets, dbt_project
 from orchestration.ingestion_assets import ingestion_assets
+from orchestration.openmetadata_assets import openmetadata_catalog
 
 daily_refresh_job = define_asset_job(
     name="daily_refresh",
@@ -28,7 +29,7 @@ daily_refresh_schedule = ScheduleDefinition(
 )
 
 defs = Definitions(
-    assets=[*ingestion_assets, curbside_dbt_assets],
+    assets=[*ingestion_assets, curbside_dbt_assets, openmetadata_catalog],
     jobs=[daily_refresh_job],
     schedules=[daily_refresh_schedule],
     # One process per run: dlt pipelines initialise their working dirs on import, which

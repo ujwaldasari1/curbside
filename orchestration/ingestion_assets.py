@@ -1,8 +1,9 @@
 """Dagster assets for the dlt ingestion pipelines (one multi-asset per source).
 
-Asset keys are `[source, table]` (e.g. `nyc311/service_requests`), which is exactly how
-dagster-dbt names dbt sources, so Dagster wires raw tables to the dbt models that read
-them with no extra configuration.
+Every Dagster asset key in Curbside is `[schema, table]` (here e.g.
+`raw_nyc311/service_requests`). The dbt translator keys dbt sources the same way, so
+Dagster wires raw tables to the models that read them, and OpenMetadata's Dagster
+connector can resolve each asset to its warehouse table for pipeline lineage.
 """
 
 from dagster import AssetExecutionContext, AssetKey
@@ -16,7 +17,7 @@ class CurbsideDltTranslator(DagsterDltTranslator):
     def get_asset_spec(self, data: DltResourceTranslatorData):
         spec = super().get_asset_spec(data)
         return spec.replace_attributes(
-            key=AssetKey([data.resource.source_name, data.resource.name]),
+            key=AssetKey([data.pipeline.dataset_name, data.resource.name]),
             deps=[],
             group_name="ingestion",
         )

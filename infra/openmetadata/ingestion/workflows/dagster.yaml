@@ -1,0 +1,29 @@
+# Ingest Dagster jobs, run history and asset lineage into OpenMetadata. Every Curbside
+# asset key is [schema, table], so the connector resolves assets to warehouse tables and
+# stamps the lineage edges with this pipeline. Requires the Dagster webserver.
+source:
+  type: dagster
+  serviceName: curbside_dagster
+  serviceConnection:
+    config:
+      type: Dagster
+      host: ${DAGSTER_URL}
+      stripAssetKeyPrefixLength: 0
+  sourceConfig:
+    config:
+      type: PipelineMetadata
+      includeLineage: true
+      markDeletedPipelines: true
+      lineageInformation:
+        dbServiceNames:
+          - curbside_warehouse
+sink:
+  type: metadata-rest
+  config: {}
+workflowConfig:
+  loggerLevel: INFO
+  openMetadataServerConfig:
+    hostPort: ${OPENMETADATA_HOST}
+    authProvider: openmetadata
+    securityConfig:
+      jwtToken: ${OPENMETADATA_JWT_TOKEN}

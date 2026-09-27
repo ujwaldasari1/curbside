@@ -1,10 +1,11 @@
 """Dagster assets for the dbt project. dbt tests surface as Dagster asset checks."""
 
+import shutil
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from dagster import AssetExecutionContext
+from dagster import AssetExecutionContext, AssetKey
 from dagster_dbt import (
     DagsterDbtTranslator,
     DagsterDbtTranslatorSettings,
@@ -20,12 +21,16 @@ dbt_project.prepare_if_dev()
 
 
 class CurbsideDbtTranslator(DagsterDbtTranslator):
-    """Groups dbt assets by layer (staging / intermediate / marts)."""
+    """Keys dbt sources as `[schema, table]` (matching the dlt assets that load them) and
+    groups dbt assets by layer (staging / intermediate / marts)."""
 
     def get_asset_spec(self, manifest: Mapping[str, Any], unique_id: str, project):
         spec = super().get_asset_spec(manifest, unique_id, project)
+        source = manifest["sources"].get(unique_id)
+        if source is not None:
+            return spec.replace_attributes(key=AssetKey([source["schema"], source["name"]]))
         node = manifest["nodes"].get(unique_id)
-        if node is None:  # dbt sources keep their default spec
+        if node is None:
             return spec
         if node["resource_type"] == "seed":
             return spec.replace_attributes(group_name="staging")
@@ -42,4 +47,13 @@ class CurbsideDbtTranslator(DagsterDbtTranslator):
     ),
 )
 def curbside_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
-    yield from dbt.cli(["build"], context=context).stream()
+    invocation = dbt.cli(["build"], context=context)
+    try:
+        yield from invocation.stream()
+    finally:
+        # Publish artifacts where OpenMetadata's dbt ingestion reads them, including after
+        # a failed build, so failing tests reach the catalog and the incident agent.
+        for artifact in ("manifest.json", "run_results.json"):
+            source = invocation.target_path / artifact
+            if source.exists():
+                shutil.copy(source, DBT_PROJECT_DIR / "target" / artifact)

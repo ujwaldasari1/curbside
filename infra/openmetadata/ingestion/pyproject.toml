@@ -1,0 +1,13 @@
+# Isolated environment for OpenMetadata's ingestion framework (`metadata` CLI).
+# Kept separate from the main project because openmetadata-ingestion pins many
+# transitive dependencies that conflict with dbt / Dagster.
+[project]
+name = "curbside-om-ingestion"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "openmetadata-ingestion[postgres,dbt,dagster]==2.0.2.0",
+]
+
+[tool.uv]
+package = false
