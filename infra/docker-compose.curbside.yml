@@ -11,4 +11,6 @@ services:
 
   postgresql:
     volumes:
-      - ./postgres/bootstrap.sql:/curbside/bootstrap.sql:ro
+      # Mount the directory, not single files: editors replace files (new inode), which
+      # silently detaches single-file bind mounts.
+      - ./postgres:/curbside:ro

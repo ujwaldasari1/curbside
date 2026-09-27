@@ -43,8 +43,9 @@ down: ## Stop all containers (data is kept)
 ps: ## Container status
 	$(COMPOSE) ps
 
-db-bootstrap: ## Create the curbside database, schemas and roles (idempotent)
+db-bootstrap: ## Create the curbside database, schemas, roles and ops tables (idempotent)
 	$(PG) -f /curbside/bootstrap.sql
+	$(PG) -d curbside -f /curbside/ops.sql
 
 mem: ## Show container memory usage
 	docker stats --no-stream --format 'table {{.Name}}\t{{.MemUsage}}\t{{.CPUPerc}}'

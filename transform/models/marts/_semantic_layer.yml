@@ -1,0 +1,148 @@
+models:
+  - name: metricflow_time_spine
+    description: One row per calendar day; the time spine for MetricFlow.
+    time_spine:
+      standard_granularity_column: date_day
+    columns:
+      - name: date_day
+        granularity: day
+
+semantic_models:
+  - name: community_districts
+    description: NYC's 59 community districts.
+    model: ref('dim_community_district')
+    entities:
+      - name: community_district
+        type: primary
+        expr: boro_cd
+    dimensions:
+      - name: borough
+        type: categorical
+      - name: cd_name
+        type: categorical
+
+  - name: monthly_tonnage
+    description: DSNY monthly curbside collection by district and stream.
+    model: ref('fct_monthly_tonnage')
+    defaults:
+      agg_time_dimension: month_start
+    entities:
+      - name: district_month
+        type: primary
+        expr: "boro_cd::text || '-' || month_start::text"
+      - name: community_district
+        type: foreign
+        expr: boro_cd
+    dimensions:
+      - name: month_start
+        type: time
+        type_params:
+          time_granularity: month
+    measures:
+      - name: refuse_tons
+        agg: sum
+      - name: paper_tons
+        agg: sum
+      - name: mgp_tons
+        agg: sum
+      - name: organics_tons
+        agg: sum
+      - name: total_collected_tons
+        agg: sum
+      - name: diverted_tons
+        agg: sum
+        expr: curbside_recycling_tons + organics_tons
+
+  - name: daily_sanitation
+    description: Daily DSNY 311 demand by district, with weather flags.
+    model: ref('fct_district_daily_sanitation')
+    defaults:
+      agg_time_dimension: activity_date
+    entities:
+      - name: district_day
+        type: primary
+        expr: "boro_cd::text || '-' || activity_date::text"
+      - name: community_district
+        type: foreign
+        expr: boro_cd
+    dimensions:
+      - name: activity_date
+        type: time
+        type_params:
+          time_granularity: day
+      - name: is_snow_day
+        type: categorical
+      - name: is_heavy_rain_day
+        type: categorical
+    measures:
+      - name: sanitation_requests
+        agg: sum
+        expr: requests_total
+      - name: missed_collection_requests
+        agg: sum
+      - name: collection_service_requests
+        agg: sum
+      - name: snow_and_ice_requests
+        agg: sum
+      - name: illegal_dumping_requests
+        agg: sum
+
+metrics:
+  - name: refuse_tons
+    label: Refuse (tons)
+    description: Trash collected for disposal, in short tons.
+    type: simple
+    type_params:
+      measure: refuse_tons
+  - name: total_collected_tons
+    label: Total collected (tons)
+    description: All curbside streams combined (refuse, paper, MGP, organics).
+    type: simple
+    type_params:
+      measure: total_collected_tons
+  - name: diverted_tons
+    label: Diverted (tons)
+    description: Paper + MGP recycling + organics, in short tons.
+    type: simple
+    type_params:
+      measure: diverted_tons
+  - name: diversion_rate
+    label: Diversion rate
+    description: Share of collected tons diverted from disposal (recycling + organics) / total.
+    type: ratio
+    type_params:
+      numerator: diverted_tons
+      denominator: total_collected_tons
+  - name: sanitation_requests
+    label: DSNY 311 requests
+    description: 311 service requests routed to DSNY.
+    type: simple
+    type_params:
+      measure: sanitation_requests
+  - name: missed_collection_requests
+    label: Missed collection complaints
+    description: 311 complaints that scheduled collection did not happen.
+    type: simple
+    type_params:
+      measure: missed_collection_requests
+  - name: snow_and_ice_requests
+    label: Snow and ice complaints
+    description: 311 snow or ice complaints handled by DSNY.
+    type: simple
+    type_params:
+      measure: snow_and_ice_requests
+  - name: illegal_dumping_requests
+    label: Illegal dumping complaints
+    description: 311 illegal dumping complaints.
+    type: simple
+    type_params:
+      measure: illegal_dumping_requests
+  - name: missed_collections_per_1k_refuse_tons
+    label: Missed collections per 1,000 refuse tons
+    description: Service-reliability rate; compare districts of different sizes.
+    type: derived
+    type_params:
+      expr: missed_collection_requests * 1000 / nullif(refuse_tons, 0)
+      metrics:
+        - name: missed_collection_requests
+        - name: refuse_tons

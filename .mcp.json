@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "openmetadata": {
+      "type": "http",
+      "url": "http://localhost:8585/mcp",
+      "headers": {
+        "Authorization": "Bearer ${OPENMETADATA_JWT_TOKEN}"
+      }
+    },
+    "curbside": {
+      "type": "stdio",
+      "command": "uv",
+      "args": ["run", "--quiet", "python", "-m", "mcp_servers.curbside_mcp"],
+      "env": {
+        "PYTHONPATH": ".",
+        "CURBSIDE_AGENT_NAME": "claude-code",
+        "CURBSIDE_SQL_SCHEMAS": "marts,staging,intermediate,raw_*,ops"
+      }
+    }
+  }
+}

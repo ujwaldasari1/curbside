@@ -14,10 +14,14 @@ dependencies = [
     "dagster-dlt>=0.29,<0.30",
     "psycopg[binary]>=3.3",
     "requests>=2.32",
+    "mcp>=2.2,<3",
+    "sqlglot>=28,<29",
+    "dbt-metricflow[dbt-postgres]>=0.15,<0.16",
 ]
 
 [dependency-groups]
 dev = [
+    "anyio[trio]>=4",
     "pytest>=8",
     "ruff>=0.8",
 ]
