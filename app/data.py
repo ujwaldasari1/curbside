@@ -1,6 +1,8 @@
 """Data access for the Streamlit app (read-only role for reads, app role for ops writes)."""
 
+import datetime as dt
 import sys
+from decimal import Decimal
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -21,16 +23,27 @@ OM_UI = "http://localhost:8585"
 DAGSTER_UI = "http://127.0.0.1:3000"
 
 
+def _frame(cur: psycopg.Cursor) -> pd.DataFrame:
+    df = pd.DataFrame(cur.fetchall(), columns=[c.name for c in cur.description])
+    # Postgres numeric arrives as Decimal and date as datetime.date: object columns that
+    # st.line_chart silently draws as an empty chart. Convert them to float / datetime.
+    for col in df.columns:
+        first = df[col].dropna().iloc[0] if df[col].notna().any() else None
+        if isinstance(first, Decimal):
+            df[col] = df[col].astype(float)
+        elif isinstance(first, dt.date) and not isinstance(first, dt.datetime):
+            df[col] = pd.to_datetime(df[col])
+    return df
+
+
 def query(sql: str, params: tuple = ()) -> pd.DataFrame:
     with psycopg.connect(readonly_dsn(), connect_timeout=5) as conn:
-        cur = conn.execute(sql, params)
-        return pd.DataFrame(cur.fetchall(), columns=[c.name for c in cur.description])
+        return _frame(conn.execute(sql, params))
 
 
 def app_query(sql: str, params: tuple = ()) -> pd.DataFrame:
     with psycopg.connect(app_dsn(), connect_timeout=5) as conn:
-        cur = conn.execute(sql, params)
-        return pd.DataFrame(cur.fetchall(), columns=[c.name for c in cur.description])
+        return _frame(conn.execute(sql, params))
 
 
 def service_up(url: str) -> bool:
