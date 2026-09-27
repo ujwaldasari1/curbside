@@ -103,8 +103,8 @@ dq-coverage: ## Free: inject every chaos fault and confirm a data test catches i
 
 # ---------------------------------------------------------------- agents + app
 .PHONY: app ask steward incident proposals approve reject
-app: ## Streamlit console at http://localhost:8501
-	uv run streamlit run app/streamlit_app.py
+app: ## Streamlit console at http://localhost:8501 (next free port if taken)
+	uv run streamlit run app/streamlit_app.py --server.address 127.0.0.1
 
 ask: ## Analyst agent: make ask Q="Which borough diverts the most waste?"
 	uv run python -m agents.analyst "$(Q)"

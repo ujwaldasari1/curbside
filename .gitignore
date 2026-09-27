@@ -1,5 +1,10 @@
 # secrets
 .env
+.env.*
+!.env.example
+.envrc
+.streamlit/secrets.toml
+.claude/settings.local.json
 
 # python
 .venv/
@@ -23,7 +28,7 @@ logs/
 !.dagster_home/dagster.yaml
 
 # docker volumes
-infra/docker-volume/
+**/docker-volume/
 
 # evals / traces
 evals/reports/*.json
