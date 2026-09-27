@@ -17,6 +17,7 @@ dependencies = [
     "mcp>=2.2,<3",
     "sqlglot>=28,<29",
     "dbt-metricflow[dbt-postgres]>=0.15,<0.16",
+    "claude-agent-sdk>=0.2.160,<0.3",
 ]
 
 [dependency-groups]
@@ -30,12 +31,16 @@ dev = [
 package = false
 
 [tool.ruff]
-line-length = 100
+line-length = 120
 target-version = "py312"
 extend-exclude = ["transform/target", "transform/dbt_packages"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# dlt.sources.incremental(...) as a default argument is how dlt declares incremental cursors.
+"ingestion/sources/*.py" = ["B008"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "mcp_servers"]

@@ -1,0 +1,30 @@
+# Ground truth for personal-data classification of the 311 fact table.
+# sensitive: identifies or locates a specific household/property -> PII.Sensitive expected
+# not_sensitive: must NOT be tagged PII.Sensitive
+# Columns not listed (street_name, resolution_description) are judgment calls and are
+# excluded from scoring.
+table: marts.fct_service_requests
+sensitive:
+  - incident_address
+  - latitude
+  - longitude
+not_sensitive:
+  - service_request_id
+  - created_at
+  - created_date
+  - closed_at
+  - resolution_updated_at
+  - source_updated_at
+  - status
+  - complaint_type
+  - descriptor
+  - complaint_category
+  - is_collection_service
+  - intake_channel
+  - location_type
+  - borough
+  - community_board_raw
+  - boro_cd
+  - district_type
+  - incident_zip
+  - resolution_hours

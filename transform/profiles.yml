@@ -9,4 +9,6 @@ curbside:
       password: "{{ env_var('CURBSIDE_ETL_PASSWORD', 'curbside_etl') }}"
       dbname: "{{ env_var('CURBSIDE_PG_DB', 'curbside') }}"
       schema: staging
-      threads: 4
+      # Single-threaded by default: parallel view rebuilds (dbt's rename/drop-cascade
+      # swap) intermittently deadlock in Postgres. The project builds in seconds anyway.
+      threads: "{{ env_var('DBT_THREADS', '1') | as_number }}"

@@ -1,6 +1,6 @@
 -- Each of the last 12 reported months should have tonnage for all 59 community
 -- districts. A gap usually means the upstream dataset published a partial month.
-{{ config(severity='warn') }}
+-- Severity error: a partial month silently skews every per-district comparison.
 
 with recent_months as (
 

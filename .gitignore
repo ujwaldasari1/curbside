@@ -33,3 +33,6 @@ evals/reports/*.json
 
 # dbt per-machine user id
 transform/.user.yml
+
+# agent traces
+.traces/

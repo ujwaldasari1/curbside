@@ -1,0 +1,140 @@
+# Golden questions for the analyst agent. Expected answers are computed LIVE from the
+# certified marts by `reference_sql`, so the eval stays correct as data refreshes daily.
+#
+# kind: number  -> one value; the agent's key_numbers must contain it within `tolerance`
+#                  (relative; percentages may be reported as 0-1 or 0-100)
+# kind: label   -> one text value; the agent's answer must name it (case-insensitive)
+# kind: no_data -> unanswerable from this data; the agent must say so and report no numbers
+
+- id: latest_citywide_diversion
+  question: What was the citywide curbside diversion rate in the most recent month with tonnage data?
+  kind: number
+  tolerance: 0.01
+  reference_sql: |
+    select sum(curbside_recycling_tons + organics_tons) / sum(total_collected_tons)
+    from marts.fct_monthly_tonnage
+    where month_start = (select max(month_start) from marts.fct_monthly_tonnage)
+
+- id: best_borough_diversion_latest
+  question: Which borough had the highest diversion rate in the most recent month with tonnage data?
+  kind: label
+  reference_sql: |
+    select d.borough
+    from marts.fct_monthly_tonnage t join marts.dim_community_district d using (boro_cd)
+    where t.month_start = (select max(month_start) from marts.fct_monthly_tonnage)
+    group by d.borough
+    order by sum(t.curbside_recycling_tons + t.organics_tons) / sum(t.total_collected_tons) desc
+    limit 1
+
+- id: worst_borough_diversion_2025
+  question: Which borough had the lowest diversion rate across calendar year 2025?
+  kind: label
+  reference_sql: |
+    select d.borough
+    from marts.fct_monthly_tonnage t join marts.dim_community_district d using (boro_cd)
+    where t.month_start between '2025-01-01' and '2025-12-01'
+    group by d.borough
+    order by sum(t.curbside_recycling_tons + t.organics_tons) / sum(t.total_collected_tons)
+    limit 1
+
+- id: refuse_tons_2025
+  question: How many tons of refuse did DSNY collect citywide in 2025?
+  kind: number
+  tolerance: 0.01
+  reference_sql: |
+    select sum(refuse_tons) from marts.fct_monthly_tonnage
+    where month_start between '2025-01-01' and '2025-12-01'
+
+- id: organics_tons_2025
+  question: How many tons of organics were collected citywide in 2025?
+  kind: number
+  tolerance: 0.01
+  reference_sql: |
+    select sum(organics_tons) from marts.fct_monthly_tonnage
+    where month_start between '2025-01-01' and '2025-12-01'
+
+- id: brooklyn_diversion_2025
+  question: What was Brooklyn's diversion rate for 2025 as a whole?
+  kind: number
+  tolerance: 0.01
+  reference_sql: |
+    select sum(t.curbside_recycling_tons + t.organics_tons) / sum(t.total_collected_tons)
+    from marts.fct_monthly_tonnage t join marts.dim_community_district d using (boro_cd)
+    where d.borough = 'Brooklyn' and t.month_start between '2025-01-01' and '2025-12-01'
+
+- id: missed_collections_2025
+  question: How many missed-collection complaints did 311 receive for DSNY in 2025?
+  kind: number
+  tolerance: 0.005
+  reference_sql: |
+    select sum(missed_collection_requests) from marts.fct_district_daily_sanitation
+    where activity_date between '2025-01-01' and '2025-12-31'
+
+- id: top_district_missed_2025
+  question: Which community district had the most missed-collection complaints in 2025? Give its neighborhoods.
+  kind: label
+  reference_sql: |
+    select d.cd_name
+    from marts.fct_district_daily_sanitation s join marts.dim_community_district d using (boro_cd)
+    where s.activity_date between '2025-01-01' and '2025-12-31'
+    group by d.cd_name
+    order by sum(s.missed_collection_requests) desc
+    limit 1
+
+- id: worst_borough_reliability_2025
+  question: Which borough had the highest rate of missed collections per 1,000 tons of refuse in 2025?
+  kind: label
+  reference_sql: |
+    with m as (
+      select d.borough, sum(s.missed_collection_requests) as missed
+      from marts.fct_district_daily_sanitation s join marts.dim_community_district d using (boro_cd)
+      where s.activity_date between '2025-01-01' and '2025-12-31' group by 1),
+    t as (
+      select d.borough, sum(t.refuse_tons) as refuse
+      from marts.fct_monthly_tonnage t join marts.dim_community_district d using (boro_cd)
+      where t.month_start between '2025-01-01' and '2025-12-01' group by 1)
+    select m.borough from m join t using (borough) order by m.missed * 1000.0 / t.refuse desc limit 1
+
+- id: snow_day_complaints
+  question: On days with at least 1 cm of snow, how many snow and ice complaints does a community district get on average per day?
+  kind: number
+  tolerance: 0.02
+  reference_sql: |
+    select avg(snow_and_ice_requests)::numeric from marts.fct_district_daily_sanitation where is_snow_day
+
+- id: illegal_dumping_share_2025
+  question: What share of DSNY 311 requests in 2025 were about illegal dumping?
+  kind: number
+  tolerance: 0.01
+  reference_sql: |
+    select sum(illegal_dumping_requests)::numeric / sum(requests_total)
+    from marts.fct_district_daily_sanitation
+    where activity_date between '2025-01-01' and '2025-12-31'
+
+- id: top_category_2025
+  question: Which complaint category generated the most DSNY 311 requests in 2025?
+  kind: label
+  reference_sql: |
+    select complaint_category from marts.fct_service_requests
+    where created_date between '2025-01-01' and '2025-12-31'
+    group by 1 order by count(*) desc limit 1
+
+- id: missed_collection_resolution_hours_2025
+  question: For missed-collection complaints opened in 2025, what was the median time to close them, in hours?
+  kind: number
+  tolerance: 0.02
+  reference_sql: |
+    select percentile_cont(0.5) within group (order by resolution_hours)
+    from marts.fct_service_requests
+    where complaint_type = 'Missed Collection' and created_date between '2025-01-01' and '2025-12-31'
+      and resolution_hours is not null
+
+- id: district_count
+  question: How many residential community districts does the data cover?
+  kind: number
+  tolerance: 0
+  reference_sql: select count(*) from marts.dim_community_district
+
+- id: no_data_1985
+  question: What was the Bronx's diversion rate in 1985?
+  kind: no_data
